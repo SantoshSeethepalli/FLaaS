@@ -7,80 +7,69 @@ import argparse
 from .client import FederatedClient
 
 
-def load_contract_and_join_code(client, join_code_arg):
-    """Helper function to load contract and get join code."""
-    client.load_contract()
-    
-    join_code = join_code_arg
-    if not join_code and client.config and "join_code" in client.config:
-        join_code = client.config["join_code"]
-    elif not join_code:
-        print("Error: Join code required. Use --join-code or join first.")
-        sys.exit(1)
-    
-    return join_code
-
-
 def main():
     parser = argparse.ArgumentParser(description="Federated Learning Client")
     subparsers = parser.add_subparsers(dest="command")
-    
-    join_parser = subparsers.add_parser("join")
-    join_parser.add_argument("join_code", help="Join code for the round")
-    
-    sync_parser = subparsers.add_parser("sync")
-    
-    train_parser = subparsers.add_parser("train")
+
+    join_parser = subparsers.add_parser("join", help="Join a federated learning round with a join code")
+    join_parser.add_argument("--code", required=True, help="Join code provided by the server")
+    sync_parser = subparsers.add_parser("sync", help="Pull latest FL contract from server")
+    train_parser = subparsers.add_parser("train", help="Train locally using contract.json and user data")
     train_parser.add_argument("--data", required=True)
-    train_parser.add_argument("--join-code", help="Join code (optional if already joined)")
-    
-    upload_parser = subparsers.add_parser("upload")
-    
-    full_parser = subparsers.add_parser("trainAndUpload")
-    full_parser.add_argument("--data", required=True)
-    full_parser.add_argument("--join-code", help="Join code (optional if already joined)")
-    
+    upload_parser = subparsers.add_parser("upload", help="Upload model update and training metadata to server")
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         return
-    
+
     client = FederatedClient()
-    
+
     try:
         if args.command == "join":
-            client.join_round(args.join_code)
-            print("Join completed")
-            
+            try:
+                client.join_round(args.code)
+                print(f"Joined round with code: {args.code}")
+            except Exception as e:
+                print(f"Join failed: {e}")
+                sys.exit(1)
         elif args.command == "sync":
-            client.load_contract()
-            client.sync()
-            
+            try:
+                client.sync_contract()
+                print("Sync completed")
+            except Exception as e:
+                print(f"Sync failed: {e}")
+                sys.exit(1)
         elif args.command == "train":
-            join_code = load_contract_and_join_code(client, args.join_code)
-            client.join_round(join_code)
-            client.setup()
-            metadata = client.train(args.data)
-            print("Training completed")
-                
+            try:
+                client.load_contract()
+                client.setup()
+                metadata = client.train(args.data)
+                if metadata is not None:
+                    print("Training completed")
+                else:
+                    print("Training failed. Check your data file and contract.")
+            except FileNotFoundError as e:
+                print(f"Training failed: {e}. Make sure the contract is synced and the data file exists.")
+                sys.exit(1)
+            except Exception as e:
+                print(f"Training failed: {e}")
+                sys.exit(1)
         elif args.command == "upload":
-            client.load_contract()
-            client.upload()
-            print("Upload completed")
-            
-        elif args.command == "trainAndUpload":
-            join_code = load_contract_and_join_code(client, args.join_code)
-            client.join_round(join_code)
-            client.setup()
-            metadata = client.train(args.data)
-            client.upload(metadata)
-            print("Full cycle completed")
-            
-    except Exception as e:
-        print(f"Error: {e}")
+            try:
+                client.load_contract()
+                result = client.upload()
+                if result is not None:
+                    print("Upload completed")
+                else:
+                    print("Upload failed. Run training first.")
+            except Exception as e:
+                print(f"Upload failed: {e}")
+                sys.exit(1)
+    except KeyboardInterrupt:
+        print("Operation cancelled by user.")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main() 

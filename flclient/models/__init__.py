@@ -1,1 +1,0 @@
-# Model factory pattern inspired by scikit-learn API (Pedregosa et al., 2011) 

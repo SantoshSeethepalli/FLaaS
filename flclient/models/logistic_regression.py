@@ -16,9 +16,14 @@ class LogisticRegressionModel(BaseModel):
         self.learning_rate = config["learning_rate"]
         self.epochs = config["epochs"]
         self.batch_size = config["batch_size"]
-        # Weight initialization (small random values)
-        self.beta = np.random.uniform(-0.1, 0.1, (self.input_size, 1))  # Regression coefficients
-        self.beta_0 = 0.0  # Intercept
+        # Flat weights: [beta..., beta_0]
+        if "initial_weights" in config and config["initial_weights"]:
+            self.set_weights_from_flat(config["initial_weights"])
+            print("Loaded initial weights from server (flat)")
+        else:
+            self.beta = np.random.uniform(-0.1, 0.1, (self.input_size, 1))
+            self.beta_0 = 0.0
+            print("Using random weight initialization")
 
     def sigmoid(self, x):
         """Sigmoid function as in Cox (1958)."""
@@ -69,4 +74,12 @@ class LogisticRegressionModel(BaseModel):
             raise ValueError("Model not trained yet")
         z = np.dot(X, self.beta) + self.beta_0
         p = self.sigmoid(z)
-        return p.flatten() 
+        return p.flatten()
+
+    def set_weights_from_flat(self, flat_weights):
+        flat = np.array(flat_weights)
+        self.beta = flat[:-1].reshape(-1, 1)
+        self.beta_0 = float(flat[-1])
+
+    def get_flat_weights(self):
+        return np.concatenate([self.beta.flatten(), [self.beta_0]]).tolist() 

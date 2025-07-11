@@ -1,10 +1,19 @@
 {
   "model_type": "mlp",
+  "model_version": "v1.0",
   "input_size": 10,
   "hidden_size": 32,
-  "learning_rate": 0.01,
-  "epochs": 5,
-  "batch_size": 16,
-  "feature_columns": ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5", "feature_6", "feature_7", "feature_8", "feature_9", "feature_10"],
-  "target_column": "target"
+  "initial_weights": [],
+  "feature_columns": [
+    "feature_1", "feature_2", "feature_3", "feature_4", "feature_5",
+    "feature_6", "feature_7", "feature_8", "feature_9", "feature_10"
+  ],
+  "target_column": "target",
+  "training_params": {
+    "epochs": 3,
+    "batch_size": 32,
+    "learning_rate": 0.01
+  },
+  "round_id": 1,
+  "aggregation": "FedAvg"
 } 

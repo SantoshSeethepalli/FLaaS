@@ -1,15 +1,8 @@
-"""
-Abstract base class for all models.
-Reference: Pedregosa, F., et al. (2011). "Scikit-learn: Machine Learning in Python." Journal of Machine Learning Research, 12, 2825-2830.
-"""
 from abc import ABC, abstractmethod
 
 
 class BaseModel(ABC):
-    """
-    Abstract base class for all models.
-    Reference: Pedregosa et al. (2011) for API design inspiration.
-    """
+    ## interface implementation for all models.
     
     def __init__(self, config):
         self.config = config
@@ -28,4 +21,14 @@ class BaseModel(ABC):
     @abstractmethod
     def predict_proba(self, X):
         """Predict probabilities."""
+        pass
+    
+    @abstractmethod
+    def set_weights_from_flat(self, flat_weights):
+        """Set model weights from a flat list."""
+        pass
+    
+    @abstractmethod
+    def get_flat_weights(self):
+        """Get model weights as a flat list."""
         pass 

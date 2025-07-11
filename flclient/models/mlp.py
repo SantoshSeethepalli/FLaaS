@@ -17,11 +17,16 @@ class MLPModel(BaseModel):
         self.learning_rate = config["learning_rate"]
         self.epochs = config["epochs"]
         self.batch_size = config["batch_size"]
-        # Weight initialization as in the paper (small random values)
-        self.W_ih = np.random.uniform(-0.1, 0.1, (self.input_size, self.hidden_size))  # Input to hidden
-        self.b_h = np.zeros((1, self.hidden_size))
-        self.W_ho = np.random.uniform(-0.1, 0.1, (self.hidden_size, 1))  # Hidden to output
-        self.b_o = np.zeros((1, 1))
+        # Flat weights: [W_ih.flatten(), b_h, W_ho, b_o]
+        if "initial_weights" in config and config["initial_weights"]:
+            self.set_weights_from_flat(config["initial_weights"])
+            print("Loaded initial weights from server (flat)")
+        else:
+            self.W_ih = np.random.uniform(-0.1, 0.1, (self.input_size, self.hidden_size))
+            self.b_h = np.zeros((1, self.hidden_size))
+            self.W_ho = np.random.uniform(-0.1, 0.1, (self.hidden_size, 1))
+            self.b_o = np.zeros((1, 1))
+            print("Using random weight initialization")
 
     def sigmoid(self, x):
         """Sigmoid activation function (Rumelhart et al., Eq. 1)."""
@@ -81,4 +86,26 @@ class MLPModel(BaseModel):
         if not self.is_trained:
             raise ValueError("Model not trained yet")
         O, _ = self.forward(X)
-        return O.flatten() 
+        return O.flatten()
+
+    def set_weights_from_flat(self, flat_weights):
+        flat = np.array(flat_weights)
+        idx = 0
+        W_ih_size = self.input_size * self.hidden_size
+        self.W_ih = flat[idx:idx+W_ih_size].reshape(self.input_size, self.hidden_size)
+        idx += W_ih_size
+        b_h_size = self.hidden_size
+        self.b_h = flat[idx:idx+b_h_size].reshape(1, self.hidden_size)
+        idx += b_h_size
+        W_ho_size = self.hidden_size
+        self.W_ho = flat[idx:idx+W_ho_size].reshape(self.hidden_size, 1)
+        idx += W_ho_size
+        self.b_o = flat[idx:idx+1].reshape(1, 1)
+
+    def get_flat_weights(self):
+        return np.concatenate([
+            self.W_ih.flatten(),
+            self.b_h.flatten(),
+            self.W_ho.flatten(),
+            self.b_o.flatten()
+        ]).tolist() 
